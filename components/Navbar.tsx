@@ -1,13 +1,17 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Home, PlusSquare, Search, User } from "lucide-react";
+import { Home, PlusSquare, Search, User, Sun, Moon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
+import { useTheme } from "next-themes";
 
 export function Navbar() {
   const pathname = usePathname();
+  const { theme, setTheme, systemTheme } = useTheme();
+  const currentTheme = theme === "system" ? systemTheme : theme;
+  const isDark = currentTheme === "dark";
   
   const routes = [
     {
@@ -33,7 +37,7 @@ export function Navbar() {
   ];
 
   return (
-    <nav className="fixed bottom-0 w-full border-t bg-white p-2 md:border-r md:border-t-0 md:top-0 md:h-full md:w-16 lg:w-64">
+    <nav className="fixed bottom-0 w-full border-t border-border bg-background p-2 md:border-r md:border-t-0 md:top-0 md:h-full md:w-16 lg:w-64">
       <div className="flex h-full flex-row items-center justify-between md:flex-col md:items-start md:justify-start md:space-y-4">
         <div className="hidden md:block p-4">
           <Link href="/">
@@ -65,6 +69,17 @@ export function Navbar() {
               </span>
             </Link>
           ))}
+          <button
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label="Toggle theme"
+            className={cn(
+              "flex items-center gap-4 rounded-lg p-2 text-sm font-medium transition-colors hover:bg-primary/10",
+              "text-muted-foreground"
+            )}
+          >
+            {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <span className="hidden lg:block">{isDark ? "Light" : "Dark"}</span>
+          </button>
         </div>
       </div>
     </nav>

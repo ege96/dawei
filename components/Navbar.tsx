@@ -1,0 +1,72 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import { Home, PlusSquare, Search, User } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
+
+export function Navbar() {
+  const pathname = usePathname();
+  
+  const routes = [
+    {
+      href: "/",
+      icon: Home,
+      active: pathname === "/"
+    },
+    {
+      href: "/search",
+      icon: Search,
+      active: pathname === "/search"
+    },
+    {
+      href: "/create",
+      icon: PlusSquare,
+      active: pathname === "/create"
+    },
+    {
+      href: "/profile",
+      icon: User,
+      active: pathname === "/profile"
+    }
+  ];
+
+  return (
+    <nav className="fixed bottom-0 w-full border-t bg-white p-2 md:border-r md:border-t-0 md:top-0 md:h-full md:w-16 lg:w-64">
+      <div className="flex h-full flex-row items-center justify-between md:flex-col md:items-start md:justify-start md:space-y-4">
+        <div className="hidden md:block p-4">
+          <Link href="/">
+            <div className="hidden lg:flex">
+              <h1 className="text-xl font-bold">Instagram Clone</h1>
+            </div>
+            <div className="hidden md:flex lg:hidden">
+              <Image src="/logo.png" alt="Logo" width={28} height={28} />
+            </div>
+          </Link>
+        </div>
+        
+        <div className="flex w-full flex-row justify-around md:flex-col md:items-start md:space-y-2 md:p-4">
+          {routes.map((route) => (
+            <Link
+              key={route.href}
+              href={route.href}
+              className={cn(
+                "flex items-center gap-4 rounded-lg p-2 text-sm font-medium transition-colors hover:bg-primary/10",
+                route.active ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <route.icon className="h-5 w-5" />
+              <span className="hidden lg:block">
+                {route.href === "/" && "Home"}
+                {route.href === "/search" && "Search"}
+                {route.href === "/create" && "Create"}
+                {route.href === "/profile" && "Profile"}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+} 

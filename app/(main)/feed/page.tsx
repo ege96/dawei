@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import PostCard from "@/components/PostCard";
 import { redirect } from "next/navigation";
 
-export default async function Feed() {
+export default async function FeedPage(props: any) {
   const supabase = await createClient();
   
   const { data: { user } } = await supabase.auth.getUser();

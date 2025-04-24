@@ -2,11 +2,12 @@
 
 import { Database } from "@/lib/database.types";
 import { createClient } from "@/utils/supabase/client";
-import { Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle, MoreVertical, Edit, Trash } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import CommentsSection from "@/components/CommentsSection";
+import { useRouter } from "next/navigation";
 
 type PostWithProfile = Database["public"]["Tables"]["posts"]["Row"] & {
   profiles: {
@@ -33,9 +34,13 @@ export default function PostDetail({
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const [likeButtonAnimating, setLikeButtonAnimating] = useState(false);
   const [imageScale, setImageScale] = useState(1);
+  const [isAuthor, setIsAuthor] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const doubleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
   const tapCountRef = useRef(0);
   const supabase = createClient();
+  const router = useRouter();
 
   useEffect(() => {
     async function loadStats() {
@@ -60,6 +65,9 @@ export default function PostDetail({
       // Check if current user liked
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        // Check if user is the author
+        setIsAuthor(user.id === post.user_id);
+        
         const { data: existingLike, error: existingError } = await supabase
           .from("likes")
           .select("*")
@@ -73,7 +81,17 @@ export default function PostDetail({
     }
     
     loadStats();
-  }, [post.id]);
+    
+    // Add click outside listener for menu
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [post.id, post.user_id]);
 
   const handleLike = async (isDoubleTap = false) => {
     try {
@@ -156,32 +174,89 @@ export default function PostDetail({
   const handleCommentsChange = (count: number) => {
     setCommentsCount(count);
   };
+  
+  const handleEdit = () => {
+    setShowMenu(false);
+    router.push(`/edit-post/${post.id}`);
+  };
+  
+  const handleDelete = async () => {
+    setShowMenu(false);
+    const confirmDelete = window.confirm("Are you sure you want to delete this post?");
+    
+    if (confirmDelete) {
+      try {
+        const { error } = await supabase
+          .from('posts')
+          .delete()
+          .eq('id', post.id);
+          
+        if (error) throw error;
+        
+        // Redirect to profile or feed
+        router.push('/');
+        router.refresh();
+      } catch (error) {
+        console.error("Error deleting post:", error);
+      }
+    }
+  };
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="rounded-lg border bg-card">
       {showHeader && (
-        <div className="flex items-center gap-3 p-3">
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
-            {post.profiles.avatar_url ? (
-              <Image
-                src={post.profiles.avatar_url}
-                alt={post.profiles.username}
-                width={40}
-                height={40}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
-                {post.profiles.username.charAt(0).toUpperCase()}
-              </div>
-            )}
+        <div className="flex items-center justify-between p-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
+              {post.profiles.avatar_url ? (
+                <Image
+                  src={post.profiles.avatar_url}
+                  alt={post.profiles.username}
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-primary/10 text-primary">
+                  {post.profiles.username.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <Link 
+              href={`/profile/${post.profiles.username}`}
+              className="text-sm font-medium"
+            >
+              {post.profiles.username}
+            </Link>
           </div>
-          <Link 
-            href={`/profile/${post.profiles.username}`}
-            className="text-sm font-medium"
-          >
-            {post.profiles.username}
-          </Link>
+          
+          {isAuthor && (
+            <div className="relative" ref={menuRef}>
+              <button 
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 rounded-full hover:bg-muted/50"
+              >
+                <MoreVertical className="h-5 w-5 text-muted-foreground" />
+              </button>
+              
+              {showMenu && (
+                <div className="absolute right-0 mt-1 w-40 bg-background border rounded-md shadow-lg z-10">
+                  <button
+                    onClick={handleEdit}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <Edit className="h-4 w-4" /> Edit Post
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                  >
+                    <Trash className="h-4 w-4" /> Delete Post
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
       

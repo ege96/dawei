@@ -5,6 +5,8 @@ import { createClient } from "@/utils/supabase/client";
 import { Database } from "@/lib/database.types";
 import Image from "next/image";
 import Link from "next/link";
+import UserMentionsInput from "./UserMentionsInput";
+import { Button } from "@/components/ui/button";
 
 type Comment = Database["public"]["Tables"]["comments"]["Row"] & {
   profiles: { username: string; avatar_url: string | null };
@@ -127,20 +129,21 @@ export default function CommentsSection({
         ))}
       </div>
       <form onSubmit={handleSubmit} className="mt-4 flex space-x-2">
-        <input
-          type="text"
-          placeholder="Add a comment..."
+        <UserMentionsInput
           value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          className="flex-1 rounded-md border px-3 py-2 text-sm"
+          onChange={setNewComment}
+          placeholder="Add a comment... (Type @ to mention users)"
+          className="flex-1"
+          rows={1}
         />
-        <button
+        <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || !newComment.trim()}
           className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+          size="sm"
         >
           {loading ? "..." : "Post"}
-        </button>
+        </Button>
       </form>
     </div>
   );

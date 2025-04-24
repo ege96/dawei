@@ -5,11 +5,21 @@ import { Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import dynamic from "next/dynamic";
+import UserMentionsInput from "@/components/UserMentionsInput";
+
+// Import ImageEditor dynamically to avoid server-side rendering issues with canvas
+const ImageEditor = dynamic(() => import('@/components/ImageEditor'), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64">Loading editor...</div>
+});
 
 export default function CreatePost() {
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [editingImage, setEditingImage] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -37,6 +47,31 @@ export default function CreatePost() {
       setFile(selectedFile);
       setError(null);
     }
+  };
+
+  const handleSaveEdit = (editedImageBlob: Blob) => {
+    // Convert blob to File object
+    const editedFile = new File([editedImageBlob], file?.name || "edited-image.jpg", {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+    
+    // Update file and preview
+    setFile(editedFile);
+    
+    // Create a new object URL for the edited image
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+    const newPreview = URL.createObjectURL(editedImageBlob);
+    setPreview(newPreview);
+    
+    // Exit editing mode
+    setEditingImage(false);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingImage(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -83,7 +118,7 @@ export default function CreatePost() {
         .insert({
           user_id: user.id,
           caption,
-          image_url: publicUrl.publicUrl,
+          image_url: publicUrl.publicUrl
         });
         
       if (insertError) {
@@ -101,6 +136,23 @@ export default function CreatePost() {
       setIsUploading(false);
     }
   };
+
+  // If in editing mode, show the image editor component
+  if (editingImage && preview) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold md:text-2xl">Edit Photo</h1>
+        </div>
+        
+        <ImageEditor
+          imageUrl={preview}
+          onSave={handleSaveEdit}
+          onCancel={handleCancelEdit}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -127,16 +179,29 @@ export default function CreatePost() {
                 fill
                 className="object-cover"
               />
-              <button
-                type="button"
-                onClick={() => {
-                  setFile(null);
-                  setPreview(null);
-                }}
-                className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white"
-              >
-                ✕
-              </button>
+              <div className="absolute inset-0 bg-black/5 flex items-end p-4">
+                <div className="flex w-full gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1 bg-white/80 hover:bg-white"
+                    onClick={() => setEditingImage(true)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="bg-white/80 hover:bg-white"
+                    onClick={() => {
+                      setFile(null);
+                      setPreview(null);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
             </div>
           ) : (
             <label className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed bg-muted/30 p-12">
@@ -163,13 +228,11 @@ export default function CreatePost() {
           <label htmlFor="caption" className="text-sm font-medium">
             Caption
           </label>
-          <textarea
-            id="caption"
+          <UserMentionsInput
             value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+            onChange={setCaption}
+            placeholder="Write a caption... (Type @ to mention users)"
             rows={3}
-            placeholder="Write a caption..."
           />
         </div>
         

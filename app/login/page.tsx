@@ -47,9 +47,10 @@ export default function Login() {
           <Image
             src="/logo.png"
             alt="Instagram Clone Logo"
-            width={64}
-            height={64}
+            width={256}
+            height={256}
             className="h-16 w-16"
+            priority
           />
           <h1 className="text-2xl font-bold">Sign in to your account</h1>
           <p className="text-sm text-muted-foreground">

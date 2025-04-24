@@ -15,6 +15,7 @@ CREATE TABLE public.posts (
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   caption TEXT,
   image_url TEXT NOT NULL,
+  location TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL
 );

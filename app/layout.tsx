@@ -7,6 +7,15 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Instagram Clone",
   description: "Instagram clone built with Next.js and Supabase",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/logo.png", type: "image/png" }
+    ],
+    apple: [
+      { url: "/logo.png" }
+    ]
+  }
 };
 
 export default function RootLayout({

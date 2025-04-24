@@ -1,17 +1,20 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Home, PlusSquare, Search, User, Sun, Moon } from "lucide-react";
+import { Home, PlusSquare, Search, User, Sun, Moon, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { createClient } from "@/utils/supabase/client";
 
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme, systemTheme } = useTheme();
   const currentTheme = theme === "system" ? systemTheme : theme;
   const isDark = currentTheme === "dark";
+  const supabase = createClient();
   
   const routes = [
     {
@@ -35,6 +38,14 @@ export function Navbar() {
       active: pathname === "/profile"
     }
   ];
+  
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      router.push("/login");
+      router.refresh();
+    }
+  };
 
   return (
     <nav className="fixed bottom-0 w-full border-t border-border bg-background p-2 md:border-r md:border-t-0 md:top-0 md:h-full md:w-16 lg:w-64">
@@ -69,6 +80,7 @@ export function Navbar() {
               </span>
             </Link>
           ))}
+          
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             aria-label="Toggle theme"
@@ -79,6 +91,18 @@ export function Navbar() {
           >
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             <span className="hidden lg:block">{isDark ? "Light" : "Dark"}</span>
+          </button>
+          
+          <button
+            onClick={handleLogout}
+            aria-label="Logout"
+            className={cn(
+              "flex items-center gap-4 rounded-lg p-2 text-sm font-medium transition-colors hover:bg-primary/10",
+              "text-muted-foreground"
+            )}
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="hidden lg:block">Logout</span>
           </button>
         </div>
       </div>

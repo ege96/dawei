@@ -3,11 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-interface UserProfilePageProps {
-  params: { username: string };
-}
-
-export default async function UserProfilePage({ params: { username } }: UserProfilePageProps) {
+export default async function UserProfilePage(props: any) {
+  const { params } = props;
+  const { username } = await params;
   const supabase = await createClient();
 
   // Fetch profile by username

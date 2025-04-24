@@ -3,14 +3,9 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import CommentsSection from "@/components/CommentsSection";
 
-type Props = {
-  params: {
-    id: string;
-  };
-};
-
-export default async function PostPage({ params }: Props) {
-  const { id } = params;
+export default async function PostPage(props: any) {
+  const { params } = props;
+  const { id } = await params;
   
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

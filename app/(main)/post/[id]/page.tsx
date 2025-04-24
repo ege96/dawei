@@ -3,12 +3,15 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import CommentsSection from "@/components/CommentsSection";
 
-interface PostPageProps {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
+type Props = {
+  params: {
+    id: string;
+  };
+};
 
-export default async function PostPage({ params: { id } }: PostPageProps) {
+export default async function PostPage({ params }: Props) {
+  const { id } = params;
+  
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {

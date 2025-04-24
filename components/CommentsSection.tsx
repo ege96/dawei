@@ -54,14 +54,14 @@ export default function CommentsSection({ postId }: { postId: string }) {
       <div className="space-y-2">
         {comments.map((comment) => (
           <div key={comment.id} className="flex items-start space-x-2">
-            <Link href={`/profile/${comment.profiles.username}`} className="h-8 w-8 flex-shrink-0 rounded-full overflow-hidden bg-muted">
+            <Link href={`/profile/${comment.profiles.username}`} className="h-8 w-8 flex-shrink-0 rounded-full overflow-hidden bg-muted flex items-center justify-center">
               {comment.profiles.avatar_url ? (
                 <Image
                   src={comment.profiles.avatar_url}
                   width={32}
                   height={32}
                   alt={comment.profiles.username}
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                 />
               ) : (
                 <div className="flex items-center justify-center h-full w-full bg-primary/10 text-primary">

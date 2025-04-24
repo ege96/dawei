@@ -106,6 +106,7 @@ export default async function UserProfilePage({ params }: Props) {
           </div>
           
           <ProfileStats
+            username={profile.username}
             postsCount={posts?.length || 0}
             followersCount={followersCount || 0}
             followingCount={followingCount || 0}

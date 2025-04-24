@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import FollowButton from "@/components/FollowButton";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import FollowListDialogContent from "@/components/FollowListDialogContent";
 
 export default async function UserProfilePage() {
   const supabase = await createClient();
@@ -21,8 +23,10 @@ export default async function UserProfilePage() {
     .eq('id', user.id)
     .single();
   
-  if (currentUserError) {
+  if (currentUserError || !currentUserProfile) {
     console.error('Error fetching current user profile:', currentUserError);
+    // Maybe redirect to an error page or show a message
+    redirect("/login?error=Could not load profile"); 
   }
   
   // Fetch user's posts
@@ -34,6 +38,7 @@ export default async function UserProfilePage() {
   
   if (postsError) {
     console.error('Error fetching posts:', postsError);
+    // Handle post fetch error if needed, but don't block profile view
   }
   
   // Fetch counts
@@ -51,7 +56,7 @@ export default async function UserProfilePage() {
     <div className="space-y-8">
       <div className="flex flex-col items-center space-y-4 md:flex-row md:space-x-8 md:space-y-0">
         <div className="h-24 w-24 overflow-hidden rounded-full bg-muted md:h-32 md:w-32">
-          {currentUserProfile?.avatar_url ? (
+          {currentUserProfile.avatar_url ? (
             <Image
               src={currentUserProfile.avatar_url}
               alt={currentUserProfile.username}
@@ -61,38 +66,64 @@ export default async function UserProfilePage() {
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-primary/10 text-3xl font-bold text-primary">
-              {currentUserProfile?.username?.charAt(0).toUpperCase() || '?'}
+              {currentUserProfile.username.charAt(0).toUpperCase() || '?'}
             </div>
           )}
         </div>
         <div className="flex flex-1 flex-col items-center space-y-4 text-center md:items-start md:text-left">
-          <div className="flex w-full items-center justify-between">
-            <h1 className="text-2xl font-bold">{currentUserProfile?.username}</h1>
-            <Link 
-              href="/profile/edit" 
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
-            >
-              Edit Profile
-            </Link>
+          <div className="flex w-full items-center justify-center md:justify-between">
+            <h1 className="text-2xl font-bold">{currentUserProfile.username}</h1>
+            <div className="flex items-center gap-2">
+              <Link 
+                href="/profile/edit" 
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                Edit Profile
+              </Link>
+              {/* Add Logout button here if desired, or keep in Navbar */}
+            </div>
           </div>
-          {currentUserProfile?.full_name && <p className="text-muted-foreground">{currentUserProfile.full_name}</p>}
+          {currentUserProfile.full_name && <p className="text-muted-foreground">{currentUserProfile.full_name}</p>}
           
           <div className="flex space-x-6">
             <div className="text-center">
               <span className="block font-bold">{posts?.length || 0}</span>
               <span className="text-sm text-muted-foreground">Posts</span>
             </div>
-            <div className="text-center">
-              <span className="block font-bold">{followersCount || 0}</span>
-              <span className="text-sm text-muted-foreground">Followers</span>
-            </div>
-            <div className="text-center">
-              <span className="block font-bold">{followingCount || 0}</span>
-              <span className="text-sm text-muted-foreground">Following</span>
-            </div>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <button className="text-center hover:underline cursor-pointer">
+                  <span className="block font-bold">{followersCount || 0}</span>
+                  <span className="text-sm text-muted-foreground">Followers</span>
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px] p-0">
+                <DialogHeader className="p-4 border-b text-center">
+                  <DialogTitle>Followers</DialogTitle>
+                </DialogHeader>
+                <FollowListDialogContent username={currentUserProfile.username} listType="followers" />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                 <button className="text-center hover:underline cursor-pointer">
+                  <span className="block font-bold">{followingCount || 0}</span>
+                  <span className="text-sm text-muted-foreground">Following</span>
+                </button>
+              </DialogTrigger>
+               <DialogContent className="sm:max-w-[425px] p-0">
+                <DialogHeader className="p-4 border-b text-center">
+                  <DialogTitle>Following</DialogTitle>
+                </DialogHeader>
+                <FollowListDialogContent username={currentUserProfile.username} listType="following" />
+              </DialogContent>
+            </Dialog>
+            
           </div>
           
-          {currentUserProfile?.bio && <p className="text-sm">{currentUserProfile.bio}</p>}
+          {currentUserProfile.bio && <p className="text-sm">{currentUserProfile.bio}</p>}
         </div>
       </div>
 

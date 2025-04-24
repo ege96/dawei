@@ -23,11 +23,11 @@ export default function SearchPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
     debounce(async (searchQuery: string, type: "users" | "posts") => {
-      setLoading(true);
+    setLoading(true);
       if (type === "users") {
         let query = supabase
-          .from("profiles")
-          .select("*")
+        .from("profiles")
+        .select("*")
           .limit(20);
           
         if (searchQuery.trim() !== "") {
@@ -35,15 +35,15 @@ export default function SearchPage() {
         }
         
         const { data, error } = await query;
-        if (!error && data) setProfiles(data);
+      if (!error && data) setProfiles(data);
         else console.error(error);
-      } else {
+    } else {
         let query = supabase
-          .from("posts")
-          .select(`
-            *,
-            profiles:user_id (username, avatar_url)
-          `)
+        .from("posts")
+        .select(`
+          *,
+          profiles:user_id (username, avatar_url)
+        `)
           .limit(20);
           
         if (searchQuery.trim() !== "") {
@@ -51,10 +51,10 @@ export default function SearchPage() {
         }
         
         const { data, error } = await query;
-        if (!error && data) setPosts(data as PostWithProfile[]);
+      if (!error && data) setPosts(data as PostWithProfile[]);
         else console.error(error);
-      }
-      setLoading(false);
+    }
+    setLoading(false);
     }, 300),
     []
   );
@@ -117,34 +117,34 @@ export default function SearchPage() {
             {profiles.length > 0 ? (
               <div className="space-y-2">
                 {profiles.map((profile) => (
-                  <Link
-                    key={profile.id}
-                    href={`/profile/${profile.username}`}
+              <Link
+                key={profile.id}
+                href={`/profile/${profile.username}`}
                     className="flex items-center space-x-3 rounded p-2 hover:bg-muted/30"
-                  >
-                    {profile.avatar_url ? (
-                      <Image
-                        src={profile.avatar_url}
-                        alt={profile.username}
+              >
+                {profile.avatar_url ? (
+                  <Image
+                    src={profile.avatar_url}
+                    alt={profile.username}
                         width={40}
                         height={40}
                         className="h-10 w-10 rounded-full object-cover"
-                      />
-                    ) : (
+                  />
+                ) : (
                       <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        {profile.username.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    {profile.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
                     <div>
                       <span className="font-medium">{profile.username}</span>
                       {profile.full_name && (
                         <p className="text-sm text-muted-foreground">{profile.full_name}</p>
                       )}
                     </div>
-                  </Link>
+              </Link>
                 ))}
               </div>
-            ) : (
+          ) : (
               query.trim() !== "" && !loading && <p>No users found.</p>
             )}
           </>
@@ -154,15 +154,15 @@ export default function SearchPage() {
             {posts.length > 0 ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                 {posts.map((post) => (
-                  <Link key={post.id} href={`/post/${post.id}`} className="block">
+              <Link key={post.id} href={`/post/${post.id}`} className="block">
                     <div className="relative aspect-square w-full overflow-hidden rounded">
-                      <Image
-                        src={post.image_url}
-                        alt={post.caption || "Post"}
-                        fill
+                  <Image
+                    src={post.image_url}
+                    alt={post.caption || "Post"}
+                    fill
                         className="object-cover transition-all hover:scale-105"
-                      />
-                    </div>
+                  />
+                </div>
                     <div className="mt-2 flex items-center space-x-2">
                       <div className="h-5 w-5 rounded-full overflow-hidden">
                         {post.profiles.avatar_url ? (
@@ -182,10 +182,10 @@ export default function SearchPage() {
                       <span className="text-xs">{post.profiles.username}</span>
                     </div>
                     <p className="mt-1 text-sm line-clamp-2">{post.caption}</p>
-                  </Link>
+              </Link>
                 ))}
               </div>
-            ) : (
+          ) : (
               query.trim() !== "" && !loading && <p>No posts found.</p>
             )}
           </>

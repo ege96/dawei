@@ -123,15 +123,3 @@ The application will be available at [http://localhost:3000](http://localhost:30
 └── utils/                # Utility functions
     └── supabase/         # Supabase client utilities
 ```
-
-## Future Enhancements
-
-Planned features for future development:
-
-- Stories feature (temporary 24-hour content)
-- Direct messaging between users
-- Post bookmarking and collections
-- Hashtags and improved discovery
-- Multi-image carousel posts
-- Notifications system
-- User tagging and mentions

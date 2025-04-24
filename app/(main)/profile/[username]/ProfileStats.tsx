@@ -1,18 +1,23 @@
 "use client";
 
 import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
+// Link is no longer needed here, but we need Dialog components
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import FollowListDialogContent from "@/components/FollowListDialogContent";
 
 export interface ProfileStatsRef {
   updateFollowerCount: (isFollowing: boolean) => void;
 }
 
 interface ProfileStatsProps {
+  username: string;
   postsCount: number;
   followersCount: number;
   followingCount: number;
 }
 
 const ProfileStats = forwardRef<ProfileStatsRef, ProfileStatsProps>(({
+  username,
   postsCount,
   followersCount: initialFollowersCount,
   followingCount,
@@ -56,14 +61,37 @@ const ProfileStats = forwardRef<ProfileStatsRef, ProfileStatsProps>(({
         <span className="block font-bold">{postsCount}</span>
         <span className="text-sm text-muted-foreground">Posts</span>
       </div>
-      <div className="text-center">
-        <span className="block font-bold">{followersCount}</span>
-        <span className="text-sm text-muted-foreground">Followers</span>
-      </div>
-      <div className="text-center">
-        <span className="block font-bold">{followingCount}</span>
-        <span className="text-sm text-muted-foreground">Following</span>
-      </div>
+
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="text-center hover:underline cursor-pointer">
+            <span className="block font-bold">{followersCount}</span>
+            <span className="text-sm text-muted-foreground">Followers</span>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px] p-0">
+           <DialogHeader className="p-4 border-b text-center">
+              <DialogTitle>Followers</DialogTitle>
+           </DialogHeader>
+          <FollowListDialogContent username={username} listType="followers" />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog>
+        <DialogTrigger asChild>
+          <button className="text-center hover:underline cursor-pointer">
+            <span className="block font-bold">{followingCount}</span>
+            <span className="text-sm text-muted-foreground">Following</span>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px] p-0">
+          <DialogHeader className="p-4 border-b text-center">
+              <DialogTitle>Following</DialogTitle>
+           </DialogHeader>
+          <FollowListDialogContent username={username} listType="following" />
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 });

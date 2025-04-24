@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import CommentsSection from "@/components/CommentsSection";
 import { useRouter } from "next/navigation";
+import FollowButton from "./FollowButton";
 
 type PostWithProfile = Database["public"]["Tables"]["posts"]["Row"] & {
   profiles: {
@@ -36,6 +37,8 @@ export default function PostDetail({
   const [imageScale, setImageScale] = useState(1);
   const [isAuthor, setIsAuthor] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+  const [isFollowingAuthor, setIsFollowingAuthor] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const doubleTapTimerRef = useRef<NodeJS.Timeout | null>(null);
   const tapCountRef = useRef(0);
@@ -43,55 +46,53 @@ export default function PostDetail({
   const router = useRouter();
 
   useEffect(() => {
-    async function loadStats() {
-      // Load total likes
-      const { count: totalLikes, error: likesError } = await supabase
-        .from("likes")
-        .select("*", { count: "exact", head: true })
-        .eq("post_id", post.id);
-      if (!likesError && typeof totalLikes === "number") {
-        setLikesCount(totalLikes);
+    async function loadStatsAndStatus() {
+      // Fetch current user first
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const userId = user?.id;
+      setCurrentUserId(userId); // Store current user ID
+
+      // Determine if the current user is the author
+      const authorCheck = userId ? userId === post.user_id : false;
+      setIsAuthor(authorCheck);
+
+      // Infer initial follow state for non-authors (must be true if in feed)
+      if (userId && !authorCheck) {
+          setIsFollowingAuthor(true); 
       }
+
+      // Run other fetches in parallel (Likes and Comments counts, User's Like Status)
+      const [likesResult, commentsResult, userLikeResult] = await Promise.all([
+        supabase.from("likes").select("*", { count: "exact", head: true }).eq("post_id", post.id),
+        supabase.from("comments").select("*", { count: "exact", head: true }).eq("post_id", post.id),
+        userId ? supabase.from("likes").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("post_id", post.id).maybeSingle() : Promise.resolve({ data: null, error: null })
+      ]);
+
+      // Set Like and Comment Counts
+      const { count: totalLikes, error: likesError } = likesResult;
+      if (!likesError && typeof totalLikes === "number") setLikesCount(totalLikes);
+      const { count: totalComments, error: commentsError } = commentsResult;
+      if (!commentsError && typeof totalComments === "number") setCommentsCount(totalComments);
       
-      // Load total comments
-      const { count: totalComments, error: commentsError } = await supabase
-        .from("comments")
-        .select("*", { count: "exact", head: true })
-        .eq("post_id", post.id);
-      if (!commentsError && typeof totalComments === "number") {
-        setCommentsCount(totalComments);
-      }
-      
-      // Check if current user liked
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Check if user is the author
-        setIsAuthor(user.id === post.user_id);
-        
-        const { data: existingLike, error: existingError } = await supabase
-          .from("likes")
-          .select("*")
-          .eq("user_id", user.id)
-          .eq("post_id", post.id)
-          .single();
-        if (!existingError && existingLike) {
-          setIsLiked(true);
-        }
+      // Set User's Like Status
+      if (userId) {
+        const { data: likeData, error: likeError } = userLikeResult as { data: any, error: any };
+        if (!likeError) setIsLiked(!!likeData);
       }
     }
     
-    loadStats();
+    loadStatsAndStatus();
     
-    // Add click outside listener for menu
+    // Click outside listener for menu
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowMenu(false);
       }
     };
-    
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [post.id, post.user_id]);
+
+  }, [post.id, post.user_id, supabase]); // Added supabase to dependency array
 
   const handleLike = async (isDoubleTap = false) => {
     try {
@@ -202,6 +203,12 @@ export default function PostDetail({
     }
   };
 
+  // Callback for FollowButton
+  const handleFollowChange = (following: boolean) => {
+      setIsFollowingAuthor(following);
+      // Optionally update follower counts elsewhere if needed
+  };
+
   return (
     <div className="rounded-lg border bg-card">
       {showHeader && (
@@ -230,33 +237,42 @@ export default function PostDetail({
             </Link>
           </div>
           
-          {isAuthor && (
-            <div className="relative" ref={menuRef}>
-              <button 
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-2 rounded-full hover:bg-muted/50"
-              >
-                <MoreVertical className="h-5 w-5 text-muted-foreground" />
-              </button>
-              
-              {showMenu && (
-                <div className="absolute right-0 mt-1 w-40 bg-background border rounded-md shadow-lg z-10">
-                  <button
-                    onClick={handleEdit}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    <Edit className="h-4 w-4" /> Edit Post
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
-                  >
-                    <Trash className="h-4 w-4" /> Delete Post
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          <div>
+            {currentUserId && !isAuthor && (
+              <FollowButton
+                profileId={post.user_id}
+                currentUserId={currentUserId}
+                isFollowing={isFollowingAuthor}
+                onFollowChange={handleFollowChange}
+              />
+            )}
+            {isAuthor && (
+              <div className="relative" ref={menuRef}>
+                <button 
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 rounded-full hover:bg-muted/50"
+                >
+                  <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                </button>
+                {showMenu && (
+                  <div className="absolute right-0 mt-1 w-40 bg-background border rounded-md shadow-lg z-10">
+                    <button
+                      onClick={handleEdit}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted"
+                    >
+                      <Edit className="h-4 w-4" /> Edit Post
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-muted"
+                    >
+                      <Trash className="h-4 w-4" /> Delete Post
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
       
@@ -272,7 +288,6 @@ export default function PostDetail({
           style={{ transform: `scale(${imageScale})` }}
         />
         
-        {/* Heart animation on double tap */}
         {showLikeAnimation && (
           <div className="absolute inset-0 flex items-center justify-center z-10 animate-heart-enter">
             <Heart className="h-24 w-24 fill-red-500 text-red-500 drop-shadow-lg animate-heart-pulse" />

@@ -10,7 +10,15 @@ type Comment = Database["public"]["Tables"]["comments"]["Row"] & {
   profiles: { username: string; avatar_url: string | null };
 };
 
-export default function CommentsSection({ postId }: { postId: string }) {
+interface CommentsSectionProps {
+  postId: string;
+  onCommentsChange?: (count: number) => void;
+}
+
+export default function CommentsSection({ 
+  postId, 
+  onCommentsChange 
+}: CommentsSectionProps) {
   const supabase = createClient();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
@@ -19,6 +27,13 @@ export default function CommentsSection({ postId }: { postId: string }) {
   useEffect(() => {
     fetchComments();
   }, [postId]);
+
+  useEffect(() => {
+    // Notify parent component when comments count changes
+    if (onCommentsChange) {
+      onCommentsChange(comments.length);
+    }
+  }, [comments.length, onCommentsChange]);
 
   async function fetchComments() {
     const { data, error } = await supabase
@@ -35,16 +50,46 @@ export default function CommentsSection({ postId }: { postId: string }) {
     e.preventDefault();
     if (!newComment.trim()) return;
     setLoading(true);
+    
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       setLoading(false);
       return;
     }
+    
+    // Optimistically add the comment locally first
+    const { data: profileData } = await supabase
+      .from("profiles")
+      .select("username, avatar_url")
+      .eq("id", user.id)
+      .single();
+      
+    if (profileData) {
+      const optimisticComment = {
+        id: `temp-${Date.now()}`,
+        post_id: postId,
+        user_id: user.id,
+        content: newComment,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        profiles: {
+          username: profileData.username,
+          avatar_url: profileData.avatar_url
+        }
+      } as Comment;
+      
+      // Update UI immediately
+      setComments(prev => [...prev, optimisticComment]);
+      setNewComment("");
+    }
+    
+    // Then save to database
     await supabase
       .from("comments")
       .insert({ post_id: postId, user_id: user.id, content: newComment });
-    setNewComment("");
-    await fetchComments();
+      
+    // Optionally refresh to get the real data with correct IDs
+    fetchComments();
     setLoading(false);
   };
 

@@ -67,10 +67,31 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "heart-pulse": {
+          "0%": { transform: "scale(0)", opacity: "0" },
+          "50%": { transform: "scale(1.2)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "0" },
+        },
+        "heart-bounce": {
+          "0%": { transform: "scale(1)" },
+          "25%": { transform: "scale(1.2)" },
+          "50%": { transform: "scale(0.95)" },
+          "75%": { transform: "scale(1.1)" },
+          "100%": { transform: "scale(1)" },
+        },
+        "heart-enter": {
+          "0%": { opacity: "0" },
+          "15%": { opacity: "0.9" },
+          "30%": { opacity: "0.9" },
+          "100%": { opacity: "0" },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "heart-enter": "heart-enter 1.2s ease-in-out",
+        "heart-pulse": "heart-pulse 1.2s ease-in-out",
+        "heart-bounce": "heart-bounce 0.6s ease-in-out",
       },
     },
   },

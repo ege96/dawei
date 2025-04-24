@@ -11,13 +11,24 @@ export default async function FeedPage(props: any) {
     redirect("/login");
   }
   
-  // Fetch posts with profiles
+  // Get users that the current user follows
+  const { data: followedUsers } = await supabase
+    .from('follows')
+    .select('following_id')
+    .eq('follower_id', user.id);
+  
+  // Create an array of user IDs to include in the feed (current user + followed users)
+  const followedUserIds = followedUsers?.map(follow => follow.following_id) || [];
+  const userIdsToShow = [user.id, ...followedUserIds];
+  
+  // Fetch posts from current user and followed users
   const { data: posts, error } = await supabase
     .from('posts')
     .select(`
       *,
       profiles:user_id (username, avatar_url)
     `)
+    .in('user_id', userIdsToShow)
     .order('created_at', { ascending: false });
     
   if (error) {
@@ -40,7 +51,7 @@ export default async function FeedPage(props: any) {
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
           <h3 className="text-lg font-medium">No posts yet</h3>
           <p className="text-sm text-muted-foreground">
-            Posts from accounts you follow will appear here.
+            Follow more users to see their posts in your feed.
           </p>
         </div>
       )}
